@@ -31,7 +31,7 @@ struct Alert
     std::string description;
     std::map<std::string, std::string> metadata;
 
-    std::string toTerminalString() const;
+    std::string toTerminalString(bool useColor = true) const;
     std::string toLogLine() const;
 };
 
@@ -40,5 +40,6 @@ std::optional<AlertType> alertTypeFromString(const std::string& value);
 std::string severityToString(Severity severity);
 std::optional<Severity> severityFromString(const std::string& value);
 std::optional<Alert> alertFromLogLine(const std::string& line);
+std::string colorizeSeverity(Severity severity, const std::string& text, bool useColor);
 
 #endif

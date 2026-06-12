@@ -3,6 +3,8 @@ cmake-build-*/
 .idea/
 ids
 ids_tests
+netsentinel
+netsentinel_tests
 logs/*.log
 !logs/.gitkeep
 *.o

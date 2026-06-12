@@ -135,6 +135,10 @@ IdsConfig ConfigLoader::load(const std::string& path)
         {
             config.logLevel = value;
         }
+        else if (key == "ansi_color_enabled")
+        {
+            config.ansiColorEnabled = parseBool(value);
+        }
         else if (key == "simulation_enabled")
         {
             config.simulationEnabled = parseBool(value);
@@ -146,6 +150,14 @@ IdsConfig ConfigLoader::load(const std::string& path)
         else if (key == "simulation_event_count")
         {
             config.simulationEventCount = parsePositiveInt(key, value);
+        }
+        else if (key == "live_capture_interface")
+        {
+            config.liveCaptureInterface = value;
+        }
+        else if (key == "live_capture_packet_count")
+        {
+            config.liveCapturePacketCount = parsePositiveInt(key, value);
         }
         else if (key == "event_log_path")
         {
@@ -187,9 +199,12 @@ void ConfigLoader::writeDefaultIfMissing(const std::string& path)
          << "ssh_brute_force_attempt_threshold=15\n"
          << "ssh_brute_force_severity=HIGH\n"
          << "log_level=INFO\n"
+         << "ansi_color_enabled=true\n"
          << "simulation_enabled=true\n"
          << "simulation_event_rate_per_second=5\n"
          << "simulation_event_count=80\n"
+         << "live_capture_interface=auto\n"
+         << "live_capture_packet_count=100\n"
          << "event_log_path=logs/events.log\n"
          << "alert_log_path=logs/alerts.log\n";
 }

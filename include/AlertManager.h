@@ -8,6 +8,7 @@
 class AlertManager
 {
 public:
+    explicit AlertManager(bool useColor = true);
     void addAlert(const Alert& alert);
     void printAlert(const Alert& alert) const;
     void printAllAlerts() const;
@@ -17,6 +18,7 @@ public:
 
 private:
     std::vector<Alert> alerts;
+    bool useColor;
 };
 
 #endif

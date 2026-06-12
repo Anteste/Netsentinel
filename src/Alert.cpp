@@ -23,6 +23,22 @@ std::vector<std::string> split(const std::string& value, char delimiter)
     }
     return parts;
 }
+
+std::string severityColor(Severity severity)
+{
+    switch (severity)
+    {
+        case Severity::LOW:
+            return "\033[32m";
+        case Severity::MEDIUM:
+            return "\033[33m";
+        case Severity::HIGH:
+            return "\033[35m";
+        case Severity::CRITICAL:
+            return "\033[1;41m";
+    }
+    return "";
+}
 }
 
 std::string alertTypeToString(AlertType type)
@@ -89,11 +105,21 @@ std::optional<Severity> severityFromString(const std::string& value)
     return std::nullopt;
 }
 
-std::string Alert::toTerminalString() const
+std::string colorizeSeverity(Severity severity, const std::string& text, bool useColor)
+{
+    if (!useColor)
+    {
+        return text;
+    }
+    return severityColor(severity) + text + "\033[0m";
+}
+
+std::string Alert::toTerminalString(bool useColor) const
 {
     std::ostringstream output;
-    output << "[ALERT][" << severityToString(severity) << "]["
-           << alertTypeToString(type) << "] " << description;
+    const std::string prefix = "[ALERT][" + severityToString(severity) + "][" +
+        alertTypeToString(type) + "]";
+    output << colorizeSeverity(severity, prefix, useColor) << " " << description;
     return output.str();
 }
 

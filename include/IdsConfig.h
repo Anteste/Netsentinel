@@ -17,9 +17,12 @@ struct IdsConfig
     Severity sshBruteForceSeverity{Severity::HIGH};
 
     std::string logLevel{"INFO"};
+    bool ansiColorEnabled{true};
     bool simulationEnabled{true};
     int simulationEventRatePerSecond{5};
     int simulationEventCount{80};
+    std::string liveCaptureInterface{"auto"};
+    int liveCapturePacketCount{100};
     std::string eventLogPath{"logs/events.log"};
     std::string alertLogPath{"logs/alerts.log"};
 

@@ -57,10 +57,10 @@ std::string formatTimestamp(long long epochSeconds)
     return output.str();
 }
 
-std::string NetworkEvent::toTerminalString() const
+std::string NetworkEvent::toTerminalString(bool useColor) const
 {
     std::ostringstream output;
-    output << "[EVENT] " << timestamp << " " << sourceIp;
+    output << (useColor ? "\033[34m[EVENT]\033[0m " : "[EVENT] ") << timestamp << " " << sourceIp;
     if (sourcePort > 0)
     {
         output << ":" << sourcePort;
@@ -70,7 +70,30 @@ std::string NetworkEvent::toTerminalString() const
     {
         output << ":" << destinationPort;
     }
-    output << " " << protocolToString(protocol);
+    const std::string protocolText = protocolToString(protocol);
+    if (useColor)
+    {
+        if (protocol == Protocol::TCP)
+        {
+            output << " \033[36m" << protocolText << "\033[0m";
+        }
+        else if (protocol == Protocol::UDP)
+        {
+            output << " \033[32m" << protocolText << "\033[0m";
+        }
+        else if (protocol == Protocol::ICMP)
+        {
+            output << " \033[33m" << protocolText << "\033[0m";
+        }
+        else
+        {
+            output << " " << protocolText;
+        }
+    }
+    else
+    {
+        output << " " << protocolText;
+    }
     return output.str();
 }
 

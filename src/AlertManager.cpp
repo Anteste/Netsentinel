@@ -4,6 +4,11 @@
 #include <iostream>
 #include <map>
 
+AlertManager::AlertManager(bool useColorValue)
+    : useColor(useColorValue)
+{
+}
+
 void AlertManager::addAlert(const Alert& alert)
 {
     alerts.push_back(alert);
@@ -11,7 +16,7 @@ void AlertManager::addAlert(const Alert& alert)
 
 void AlertManager::printAlert(const Alert& alert) const
 {
-    std::cout << alert.toTerminalString() << std::endl;
+    std::cout << alert.toTerminalString(useColor) << std::endl;
 }
 
 void AlertManager::printAllAlerts() const
@@ -44,15 +49,16 @@ void AlertManager::printStatus(int processedEvents) const
         return lhs.second > rhs.second;
     });
 
-    std::cout << "\n[STATUS] Processed events: " << processedEvents << std::endl;
-    std::cout << "[STATUS] Generated alerts: " << alerts.size() << std::endl;
-    std::cout << "[STATUS] Severity counts: "
-              << "LOW=" << severityCounts[Severity::LOW] << " "
-              << "MEDIUM=" << severityCounts[Severity::MEDIUM] << " "
-              << "HIGH=" << severityCounts[Severity::HIGH] << " "
-              << "CRITICAL=" << severityCounts[Severity::CRITICAL] << std::endl;
+    const std::string statusPrefix = useColor ? "\033[36m[STATUS]\033[0m" : "[STATUS]";
+    std::cout << "\n" << statusPrefix << " Processed events: " << processedEvents << std::endl;
+    std::cout << statusPrefix << " Generated alerts: " << alerts.size() << std::endl;
+    std::cout << statusPrefix << " Severity counts: "
+              << colorizeSeverity(Severity::LOW, "LOW=" + std::to_string(severityCounts[Severity::LOW]), useColor) << " "
+              << colorizeSeverity(Severity::MEDIUM, "MEDIUM=" + std::to_string(severityCounts[Severity::MEDIUM]), useColor) << " "
+              << colorizeSeverity(Severity::HIGH, "HIGH=" + std::to_string(severityCounts[Severity::HIGH]), useColor) << " "
+              << colorizeSeverity(Severity::CRITICAL, "CRITICAL=" + std::to_string(severityCounts[Severity::CRITICAL]), useColor) << std::endl;
 
-    std::cout << "[STATUS] Suspicious source IPs:";
+    std::cout << statusPrefix << " Suspicious source IPs:";
     if (topSources.empty())
     {
         std::cout << " none";

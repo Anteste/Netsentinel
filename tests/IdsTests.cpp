@@ -116,9 +116,12 @@ void testConfigurationLoadsValues()
          << "ssh_brute_force_attempt_threshold=5\n"
          << "ssh_brute_force_severity=HIGH\n"
          << "log_level=DEBUG\n"
+         << "ansi_color_enabled=false\n"
          << "simulation_enabled=false\n"
          << "simulation_event_rate_per_second=2\n"
          << "simulation_event_count=20\n"
+         << "live_capture_interface=en0\n"
+         << "live_capture_packet_count=25\n"
          << "event_log_path=logs/test-events.log\n"
          << "alert_log_path=logs/test-alerts.log\n";
     file.close();
@@ -130,7 +133,10 @@ void testConfigurationLoadsValues()
     expect(config.sshPort == 2222, "config should load SSH port");
     expect(config.sshBruteForceAttemptThreshold == 5, "config should load SSH threshold");
     expect(config.sshBruteForceSeverity == Severity::HIGH, "config should load SSH severity");
+    expect(!config.ansiColorEnabled, "config should load ANSI color flag");
     expect(!config.simulationEnabled, "config should load simulation flag");
+    expect(config.liveCaptureInterface == "en0", "config should load live capture interface");
+    expect(config.liveCapturePacketCount == 25, "config should load live capture packet count");
     expect(config.eventLogPath == "logs/test-events.log", "config should load event log path");
 }
 }

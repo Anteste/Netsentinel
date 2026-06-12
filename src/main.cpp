@@ -3,6 +3,7 @@
 #include "EventSimulator.h"
 #include "FileLogger.h"
 #include "IdsConfig.h"
+#include "LiveCapture.h"
 #include "PortScanRule.h"
 #include "SshBruteForceRule.h"
 
@@ -19,6 +20,8 @@ struct CliOptions
 {
     std::string configPath{"config/ids.conf"};
     bool simulate{false};
+    std::string interfaceName;
+    int packetCount{0};
     bool showAlerts{false};
     int tailAlerts{0};
     std::optional<AlertType> alertTypeFilter;
@@ -29,9 +32,11 @@ struct CliOptions
 
 void printHelp()
 {
-    std::cout << "Usage: ./ids [--simulate] [--config PATH]\n"
+    std::cout << "Usage: ./netsentinel [--simulate] [--config PATH]\n"
               << "\n"
               << "Options:\n"
+              << "  --interface IFACE Analyze live packets on IFACE, for example en0 or wlan0\n"
+              << "  --count N         Stop live capture after N packets\n"
               << "  --simulate       Run defensive simulated network events\n"
               << "  --config PATH    Load configuration from PATH\n"
               << "  --show-alerts    Print stored alerts from the alert log\n"
@@ -51,6 +56,26 @@ CliOptions parseArgs(int argc, char** argv)
         if (arg == "--simulate")
         {
             options.simulate = true;
+        }
+        else if (arg == "--interface")
+        {
+            if (i + 1 >= argc)
+            {
+                throw std::runtime_error("--interface requires an interface name");
+            }
+            options.interfaceName = argv[++i];
+        }
+        else if (arg == "--count")
+        {
+            if (i + 1 >= argc)
+            {
+                throw std::runtime_error("--count requires a number");
+            }
+            options.packetCount = std::stoi(argv[++i]);
+            if (options.packetCount <= 0)
+            {
+                throw std::runtime_error("--count must be greater than zero");
+            }
         }
         else if (arg == "--show-alerts")
         {
@@ -151,7 +176,7 @@ std::vector<Alert> applyAlertFilters(std::vector<Alert> alerts, const CliOptions
     return filtered;
 }
 
-void printStoredAlerts(const FileLogger& logger, const CliOptions& options)
+void printStoredAlerts(const FileLogger& logger, const CliOptions& options, bool useColor)
 {
     const auto alerts = applyAlertFilters(logger.loadAlerts(), options);
     if (alerts.empty())
@@ -162,7 +187,22 @@ void printStoredAlerts(const FileLogger& logger, const CliOptions& options)
 
     for (const auto& alert : alerts)
     {
-        std::cout << alert.toTerminalString() << std::endl;
+        std::cout << alert.toTerminalString(useColor) << std::endl;
+    }
+}
+
+void processEvent(const NetworkEvent& event, DetectionEngine& engine,
+    AlertManager& alertManager, const FileLogger& logger, bool useColor)
+{
+    std::cout << event.toTerminalString(useColor) << std::endl;
+    logger.logEvent(event);
+
+    const auto alerts = engine.processEvent(event);
+    for (const auto& alert : alerts)
+    {
+        alertManager.addAlert(alert);
+        logger.logAlert(alert);
+        alertManager.printAlert(alert);
     }
 }
 }
@@ -185,42 +225,54 @@ int main(int argc, char** argv)
         engine.addRule(std::make_unique<PortScanRule>(config));
         engine.addRule(std::make_unique<SshBruteForceRule>(config));
 
-        AlertManager alertManager;
+        const bool useColor = config.ansiColorEnabled;
+        AlertManager alertManager(useColor);
         FileLogger logger(config.eventLogPath, config.alertLogPath);
 
         if (options.showAlerts)
         {
-            printStoredAlerts(logger, options);
+            printStoredAlerts(logger, options, useColor);
             return 0;
         }
 
-        std::cout << "[INFO] IDS started" << std::endl;
-        std::cout << "[INFO] Config: " << options.configPath << std::endl;
-        std::cout << "[INFO] Event log: " << logger.getEventLogPath() << std::endl;
-        std::cout << "[INFO] Alert log: " << logger.getAlertLogPath() << std::endl;
+        std::cout << (useColor ? "\033[1;36m[INFO]\033[0m " : "[INFO] ") << "NetSentinel started" << std::endl;
+        std::cout << (useColor ? "\033[36m[INFO]\033[0m " : "[INFO] ") << "Config: " << options.configPath << std::endl;
+        std::cout << (useColor ? "\033[36m[INFO]\033[0m " : "[INFO] ") << "Event log: " << logger.getEventLogPath() << std::endl;
+        std::cout << (useColor ? "\033[36m[INFO]\033[0m " : "[INFO] ") << "Alert log: " << logger.getAlertLogPath() << std::endl;
 
-        if (!options.simulate && !config.simulationEnabled)
+        if (options.simulate)
         {
-            std::cout << "[INFO] Live capture is not implemented yet. Enable simulation mode to run events." << std::endl;
-            return 0;
-        }
+            std::cout << (useColor ? "\033[36m[INFO]\033[0m " : "[INFO] ") << "Running defensive simulation mode" << std::endl;
+            EventSimulator simulator(config);
+            const auto events = simulator.generateEvents();
 
-        EventSimulator simulator(config);
-        const auto events = simulator.generateEvents();
-
-        for (const auto& event : events)
-        {
-            std::cout << event.toTerminalString() << std::endl;
-            logger.logEvent(event);
-
-            const auto alerts = engine.processEvent(event);
-            for (const auto& alert : alerts)
+            for (const auto& event : events)
             {
-                alertManager.addAlert(alert);
-                logger.logAlert(alert);
-                alertManager.printAlert(alert);
+                processEvent(event, engine, alertManager, logger, useColor);
             }
+
+            alertManager.printStatus(engine.processedEventCount());
+            return 0;
         }
+
+        const std::string interfaceName = options.interfaceName.empty()
+            ? config.liveCaptureInterface
+            : options.interfaceName;
+        const int packetCount = options.packetCount > 0
+            ? options.packetCount
+            : config.liveCapturePacketCount;
+
+        LiveCapture capture(interfaceName);
+        std::cout << (useColor ? "\033[36m[INFO]\033[0m " : "[INFO] ")
+                  << "Analyzing live packets on interface " << capture.getInterfaceName()
+                  << " for " << packetCount << " packets" << std::endl;
+        std::cout << (useColor ? "\033[33m[INFO]\033[0m " : "[INFO] ")
+                  << "Live capture may require administrator permissions" << std::endl;
+
+        capture.capture(packetCount, [&](const NetworkEvent& event)
+        {
+            processEvent(event, engine, alertManager, logger, useColor);
+        });
 
         alertManager.printStatus(engine.processedEventCount());
         return 0;

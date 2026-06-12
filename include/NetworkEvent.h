@@ -24,7 +24,7 @@ struct NetworkEvent
     std::string eventType{"CONNECTION"};
     std::map<std::string, std::string> metadata;
 
-    std::string toTerminalString() const;
+    std::string toTerminalString(bool useColor = true) const;
     std::string toLogLine() const;
 };
 
