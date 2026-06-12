@@ -8,8 +8,10 @@
 
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 namespace
 {
@@ -17,6 +19,11 @@ struct CliOptions
 {
     std::string configPath{"config/ids.conf"};
     bool simulate{false};
+    bool showAlerts{false};
+    int tailAlerts{0};
+    std::optional<AlertType> alertTypeFilter;
+    std::optional<Severity> severityFilter;
+    std::string sourceFilter;
     bool help{false};
 };
 
@@ -27,6 +34,11 @@ void printHelp()
               << "Options:\n"
               << "  --simulate       Run defensive simulated network events\n"
               << "  --config PATH    Load configuration from PATH\n"
+              << "  --show-alerts    Print stored alerts from the alert log\n"
+              << "  --type TYPE      Filter stored alerts by PORT_SCAN or SSH_BRUTE_FORCE\n"
+              << "  --severity LEVEL Filter stored alerts by LOW, MEDIUM, HIGH, or CRITICAL\n"
+              << "  --source IP      Filter stored alerts by source IP\n"
+              << "  --tail-alerts N  Print the last N stored alerts\n"
               << "  --help           Show this help text\n";
 }
 
@@ -39,6 +51,57 @@ CliOptions parseArgs(int argc, char** argv)
         if (arg == "--simulate")
         {
             options.simulate = true;
+        }
+        else if (arg == "--show-alerts")
+        {
+            options.showAlerts = true;
+        }
+        else if (arg == "--type")
+        {
+            if (i + 1 >= argc)
+            {
+                throw std::runtime_error("--type requires an alert type");
+            }
+            auto type = alertTypeFromString(argv[++i]);
+            if (!type)
+            {
+                throw std::runtime_error("Invalid alert type");
+            }
+            options.alertTypeFilter = *type;
+        }
+        else if (arg == "--severity")
+        {
+            if (i + 1 >= argc)
+            {
+                throw std::runtime_error("--severity requires a severity");
+            }
+            auto severity = severityFromString(argv[++i]);
+            if (!severity)
+            {
+                throw std::runtime_error("Invalid severity");
+            }
+            options.severityFilter = *severity;
+        }
+        else if (arg == "--source")
+        {
+            if (i + 1 >= argc)
+            {
+                throw std::runtime_error("--source requires an IP address");
+            }
+            options.sourceFilter = argv[++i];
+        }
+        else if (arg == "--tail-alerts")
+        {
+            if (i + 1 >= argc)
+            {
+                throw std::runtime_error("--tail-alerts requires a number");
+            }
+            options.tailAlerts = std::stoi(argv[++i]);
+            if (options.tailAlerts <= 0)
+            {
+                throw std::runtime_error("--tail-alerts must be greater than zero");
+            }
+            options.showAlerts = true;
         }
         else if (arg == "--config")
         {
@@ -58,6 +121,49 @@ CliOptions parseArgs(int argc, char** argv)
         }
     }
     return options;
+}
+
+std::vector<Alert> applyAlertFilters(std::vector<Alert> alerts, const CliOptions& options)
+{
+    std::vector<Alert> filtered;
+    for (const auto& alert : alerts)
+    {
+        if (options.alertTypeFilter && alert.type != *options.alertTypeFilter)
+        {
+            continue;
+        }
+        if (options.severityFilter && alert.severity != *options.severityFilter)
+        {
+            continue;
+        }
+        if (!options.sourceFilter.empty() && alert.sourceIp != options.sourceFilter)
+        {
+            continue;
+        }
+        filtered.push_back(alert);
+    }
+
+    if (options.tailAlerts > 0 && static_cast<int>(filtered.size()) > options.tailAlerts)
+    {
+        filtered.erase(filtered.begin(), filtered.end() - options.tailAlerts);
+    }
+
+    return filtered;
+}
+
+void printStoredAlerts(const FileLogger& logger, const CliOptions& options)
+{
+    const auto alerts = applyAlertFilters(logger.loadAlerts(), options);
+    if (alerts.empty())
+    {
+        std::cout << "[INFO] No stored alerts matched the selected filters" << std::endl;
+        return;
+    }
+
+    for (const auto& alert : alerts)
+    {
+        std::cout << alert.toTerminalString() << std::endl;
+    }
 }
 }
 
@@ -81,6 +187,12 @@ int main(int argc, char** argv)
 
         AlertManager alertManager;
         FileLogger logger(config.eventLogPath, config.alertLogPath);
+
+        if (options.showAlerts)
+        {
+            printStoredAlerts(logger, options);
+            return 0;
+        }
 
         std::cout << "[INFO] IDS started" << std::endl;
         std::cout << "[INFO] Config: " << options.configPath << std::endl;
