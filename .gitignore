@@ -1,0 +1,10 @@
+build/
+cmake-build-*/
+.idea/
+ids
+ids_tests
+logs/*.log
+!logs/.gitkeep
+*.o
+*.out
+*.dSYM/
