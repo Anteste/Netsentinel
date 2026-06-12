@@ -1,0 +1,37 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">NetSentinel logo</title>
+  <desc id="desc">A blue shield with an eye and circuit traces representing terminal-based intrusion detection.</desc>
+  <defs>
+    <linearGradient id="shield" x1="104" y1="48" x2="408" y2="464" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#25B7FF"/>
+      <stop offset="0.45" stop-color="#0B6DCA"/>
+      <stop offset="1" stop-color="#061A33"/>
+    </linearGradient>
+    <linearGradient id="glow" x1="156" y1="138" x2="356" y2="306" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#E8FBFF"/>
+      <stop offset="1" stop-color="#42C8FF"/>
+    </linearGradient>
+    <filter id="softGlow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="10" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.05 0 0 0 0 0.65 0 0 0 0 1 0 0 0 0.65 0"/>
+      <feBlend in="SourceGraphic" mode="screen"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#06111F"/>
+  <path d="M256 40L408 94V217C408 333 340 424 256 472C172 424 104 333 104 217V94L256 40Z" fill="url(#shield)" stroke="#8FE8FF" stroke-width="12"/>
+  <path d="M138 124L256 82L374 124V214C374 307 326 380 256 426C186 380 138 307 138 214V124Z" fill="#081B32" fill-opacity="0.35" stroke="#0B1220" stroke-width="8"/>
+  <path d="M144 222C178 175 216 152 256 152C296 152 334 175 368 222C334 269 296 292 256 292C216 292 178 269 144 222Z" fill="#071221" stroke="#DFF9FF" stroke-width="12" stroke-linejoin="round"/>
+  <circle cx="256" cy="222" r="46" fill="url(#glow)" filter="url(#softGlow)"/>
+  <circle cx="256" cy="222" r="21" fill="#06111F"/>
+  <circle cx="273" cy="203" r="11" fill="#FFFFFF"/>
+  <path d="M174 318H228V356" stroke="#8FE8FF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M338 318H284V356" stroke="#8FE8FF" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 304V384" stroke="#8FE8FF" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="228" cy="372" r="13" fill="#8FE8FF"/>
+  <circle cx="284" cy="372" r="13" fill="#8FE8FF"/>
+  <circle cx="256" cy="402" r="13" fill="#8FE8FF"/>
+  <path d="M104 214H74" stroke="#8FE8FF" stroke-width="14" stroke-linecap="round"/>
+  <path d="M408 214H438" stroke="#8FE8FF" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="58" cy="214" r="14" fill="#8FE8FF"/>
+  <circle cx="454" cy="214" r="14" fill="#8FE8FF"/>
+</svg>

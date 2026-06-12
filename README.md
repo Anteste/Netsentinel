@@ -1,77 +1,131 @@
-# IDS
+<p align="center">
+  <img src="assets/netsentinel-logo.svg" alt="NetSentinel logo" width="180" />
+</p>
 
-IDS is a terminal-only real-time intrusion detection and network analysis application written in modern C++17.
+<h1 align="center">NetSentinel</h1>
 
-The project is defensive only. It analyzes network events, detects suspicious activity, prints alerts in the terminal, and stores events and alerts in local log files.
+<p align="center">
+  <strong>A terminal-based Intrusion Detection System written in modern C++.</strong>
+</p>
+
+<p align="center">
+  <a href="#features"><img alt="IDS" src="https://img.shields.io/badge/type-intrusion%20detection-blue"></a>
+  <a href="#tech-stack"><img alt="C++" src="https://img.shields.io/badge/C%2B%2B-17-00599C?logo=cplusplus"></a>
+  <a href="#terminal-first"><img alt="Terminal" src="https://img.shields.io/badge/UI-terminal%20only-111827"></a>
+  <a href="#security-scope"><img alt="Scope" src="https://img.shields.io/badge/scope-defensive%20security-green"></a>
+</p>
+
+---
+
+## Overview
+
+**NetSentinel** is a defensive, terminal-first Intrusion Detection System built in modern C++17.
+It analyzes live network packets or simulated network events, detects suspicious behavior, prints color-coded alerts directly in the terminal, and stores local event and alert logs for later review.
+
+The project focuses on practical blue-team use cases such as TCP port scan detection, SSH brute force detection, event logging, alert filtering, configurable thresholds, and real-time terminal monitoring.
+
+## Keywords
+
+`intrusion-detection-system` `ids` `network-security` `cybersecurity` `cpp` `cplusplus` `terminal` `cli` `blue-team` `security-monitoring` `port-scan-detection` `ssh-bruteforce-detection` `packet-analysis` `real-time-monitoring` `network-analysis` `threat-detection` `security-tool` `defensive-security`
 
 ## Features
 
-- Terminal-only IDS workflow
-- Simulation mode for defensive test data
-- Network event model with timestamp, source IP, destination IP, ports, protocol, event type, and metadata
-- Configurable TCP port scan detection
-- Configurable network-based SSH brute force detection
-- Alert model with ID, timestamp, type, severity, source, destination, description, and metadata
-- Event logging to `logs/events.log`
-- Alert logging to `logs/alerts.log`
-- CLI filters for stored alerts
-- Lightweight C++ test executable
+- Live packet analysis with `libpcap`
+- Auto interface selection or explicit interface selection with `--interface`
+- Simulation mode for safe defensive testing
+- TCP, UDP, and ICMP network event normalization
+- TCP port scan detection
+- Network-based SSH brute force detection
+- Configurable detection thresholds
+- Color-coded terminal output
+- Severity-specific alert colors
+- Local event and alert logging
+- CLI-based stored alert filtering
+- Modular detection engine
+- Lightweight C++ tests for detection rules
 
-## Defensive Security Scope
+## Terminal First
 
-This application does not implement exploits, malware, offensive scanners, brute-force tooling, payloads, bypasses, or persistence mechanisms.
+NetSentinel does not use a web dashboard. All interaction happens through the terminal.
 
-Simulation mode generates defensive test events so the IDS pipeline can be exercised safely without attacking any system.
+Running `./netsentinel` starts live packet analysis using the configured interface. If the interface is set to `auto`, NetSentinel chooses the first non-loopback capture interface found by `libpcap`.
+
+Live capture may require administrator permissions:
+
+```bash
+sudo ./netsentinel
+```
+
+Use simulation mode when you want safe deterministic test traffic:
+
+```bash
+./netsentinel --simulate
+```
+
+Example output:
+
+```text
+[INFO] NetSentinel started
+[INFO] Config: config/ids.conf
+[INFO] Analyzing live packets on interface en0 for 100 packets
+[EVENT] 2026-06-12 14:20:31 192.168.1.80:50000 -> 192.168.1.10:20 TCP
+[ALERT][MEDIUM][PORT_SCAN] 192.168.1.80 contacted 10 unique TCP ports in 10s
+[ALERT][HIGH][SSH_BRUTE_FORCE] 192.168.1.50 attempted 15 SSH connections in 30s
+[STATUS] Processed events: 65
+[STATUS] Generated alerts: 2
+```
+
+Alert colors:
+
+- `LOW`: green
+- `MEDIUM`: yellow
+- `HIGH`: magenta
+- `CRITICAL`: bold red background
 
 ## Architecture
 
 ```text
-EventSimulator or future live capture
-        |
-        v
-NetworkEvent
-        |
-        v
-DetectionEngine
-        |
-        +-- PortScanRule
-        +-- SshBruteForceRule
-        |
-        v
-AlertManager + FileLogger
-        |
-        v
-Terminal output and local logs
+NetSentinel
+├── Capture / Input
+│   ├── LiveCapture reads TCP, UDP, and ICMP packets with libpcap
+│   └── EventSimulator generates safe defensive test events
+├── Event Model
+│   └── NetworkEvent represents normalized network activity
+├── Detection Engine
+│   └── Runs detection rules over event streams
+├── Rules
+│   ├── PortScanRule
+│   └── SshBruteForceRule
+├── Alert Manager
+│   └── Stores and formats security alerts
+├── Storage / Logging
+│   └── Writes events and alerts locally
+├── Configuration
+│   └── Loads thresholds and runtime settings
+└── Terminal UI / CLI
+    └── Displays live events, alerts, status, and filters
 ```
 
-Main components:
+## Tech Stack
 
-- `NetworkEvent`: normalized event structure used by all detection logic.
-- `IdsConfig`: key-value configuration loader.
-- `DetectionEngine`: routes events through detection rules.
-- `PortScanRule`: detects many unique TCP destination ports from one source within a time window.
-- `SshBruteForceRule`: detects repeated network connections to the configured SSH port.
-- `AlertManager`: prints alerts and status summaries.
-- `FileLogger`: writes events and alerts to separate log files and loads stored alerts for filtering.
-- `EventSimulator`: generates normal traffic, port scan patterns, and SSH brute force patterns.
+- **Language:** C++17
+- **Interface:** Terminal / CLI
+- **Build systems:** Makefile and CMake
+- **Packet capture:** `libpcap`
+- **Storage:** Local log files
+- **Testing:** Lightweight C++ test executable
 
-## Requirements
-
-- C++17 compiler, tested with `g++`
-- `make`
-- Optional: CMake 3.16 or newer
-
-No external libraries are required.
+`libpcap` is the only external runtime dependency. It is used only for defensive packet capture and network event analysis.
 
 ## Build
 
-Use the Makefile:
+Using Make:
 
 ```bash
 make
 ```
 
-Optional CMake build if CMake is installed:
+Using CMake:
 
 ```bash
 cmake -S . -B build
@@ -80,42 +134,61 @@ cmake --build build
 
 ## Run
 
-Run defensive simulation mode:
+Start live packet analysis with the configured interface and packet count:
 
 ```bash
-./ids --simulate
+sudo ./netsentinel
 ```
 
-Use a specific configuration file:
+Analyze a specific Wi-Fi or network interface:
 
 ```bash
-./ids --simulate --config config/ids.conf
+sudo ./netsentinel --interface en0
+sudo ./netsentinel --interface wlan0
 ```
 
-Show CLI help:
+Analyze a specific number of packets:
 
 ```bash
-./ids --help
+sudo ./netsentinel --interface en0 --count 200
 ```
 
-## Alert Filtering
-
-Stored alerts are read from the configured alert log path.
+Run safe simulation mode:
 
 ```bash
-./ids --show-alerts
-./ids --show-alerts --type SSH_BRUTE_FORCE
-./ids --show-alerts --type PORT_SCAN
-./ids --show-alerts --severity HIGH
-./ids --show-alerts --source 192.168.1.50
-./ids --tail-alerts 20
+./netsentinel --simulate
+```
+
+Use a custom config file:
+
+```bash
+./netsentinel --config config/ids.conf --simulate
+```
+
+Show help:
+
+```bash
+./netsentinel --help
+```
+
+## CLI Alert Filters
+
+Stored alerts are read from the configured alert log.
+
+```bash
+./netsentinel --show-alerts
+./netsentinel --show-alerts --type PORT_SCAN
+./netsentinel --show-alerts --type SSH_BRUTE_FORCE
+./netsentinel --show-alerts --severity HIGH
+./netsentinel --show-alerts --source 192.168.1.50
+./netsentinel --tail-alerts 20
 ```
 
 ## Configuration
 
 Default configuration lives in `config/ids.conf`.
 
-```text
+```ini
 port_scan_window_seconds=10
 port_scan_port_threshold=10
 port_scan_severity=MEDIUM
@@ -126,13 +199,20 @@ ssh_brute_force_attempt_threshold=15
 ssh_brute_force_severity=HIGH
 
 log_level=INFO
+ansi_color_enabled=true
+
 simulation_enabled=true
 simulation_event_rate_per_second=5
 simulation_event_count=80
 
+live_capture_interface=auto
+live_capture_packet_count=100
+
 event_log_path=logs/events.log
 alert_log_path=logs/alerts.log
 ```
+
+All thresholds should be adjusted to your environment before using NetSentinel for real monitoring.
 
 Supported severities:
 
@@ -148,14 +228,15 @@ Supported alert types:
 
 ## Detection Rules
 
-### TCP Port Scan
+### TCP Port Scan Detection
 
-A port scan alert is generated when one source IP contacts at least the configured number of unique TCP destination ports within the configured time window.
+NetSentinel detects potential port scans by tracking how many unique TCP destination ports a single source IP contacts within a configurable time window.
 
-Example default:
+Example rule:
 
 ```text
-192.168.1.80 contacts 10 or more unique TCP ports within 10 seconds.
+If one source IP contacts 10 or more unique destination ports within 10 seconds,
+generate a PORT_SCAN alert.
 ```
 
 Generated alert metadata includes:
@@ -164,16 +245,17 @@ Generated alert metadata includes:
 - `port_summary`
 - `window_seconds`
 
-### SSH Brute Force
+### SSH Brute Force Detection
 
-This IDS currently performs network-based SSH brute force detection. It does not read authentication logs.
+NetSentinel currently performs network-based SSH brute force detection. It does not read authentication logs.
 
-An SSH brute force alert is generated when one source IP makes at least the configured number of TCP connections to the configured SSH port within the configured time window.
+An SSH brute force alert is generated when one source IP makes repeated TCP connections to the configured SSH port within the configured time window.
 
-Example default:
+Example rule:
 
 ```text
-192.168.1.50 makes 15 or more TCP connections to port 22 within 30 seconds.
+If one source IP performs 15 or more SSH connections within 30 seconds,
+generate an SSH_BRUTE_FORCE alert.
 ```
 
 Generated alert metadata includes:
@@ -183,38 +265,18 @@ Generated alert metadata includes:
 - `window_seconds`
 - `detection_source=network_connections`
 
-## Example Terminal Output
-
-```text
-[INFO] IDS started
-[INFO] Config: config/ids.conf
-[EVENT] 2026-06-12 13:55:48 192.168.1.80:50000 -> 192.168.1.10:20 TCP
-[ALERT][MEDIUM][PORT_SCAN] 192.168.1.80 contacted 10 unique TCP ports in 10s
-[ALERT][HIGH][SSH_BRUTE_FORCE] 192.168.1.50 attempted 15 SSH connections in 30s
-[STATUS] Processed events: 65
-[STATUS] Generated alerts: 2
-[STATUS] Suspicious source IPs: 192.168.1.50(1) 192.168.1.80(1)
-```
-
 ## Logs
 
-Events are written to:
+NetSentinel stores local logs for later analysis:
 
 ```text
 logs/events.log
-```
-
-Alerts are written to:
-
-```text
 logs/alerts.log
 ```
 
-Log files are local runtime artifacts and are not committed.
+Log files are runtime artifacts and are not committed.
 
-## Tests
-
-Run the test suite:
+## Running Tests
 
 ```bash
 make test
@@ -226,17 +288,34 @@ The tests cover:
 - Port scan behavior below threshold
 - SSH brute force detection above threshold
 - SSH brute force behavior below threshold
-- Expected alert fields and metadata
+- Alert field validation
 - Configuration loading
 
-## Simulation Mode vs Live Capture
+## Security Scope
 
-Simulation mode is implemented and safe to run locally. It generates realistic defensive network events and suspicious patterns.
+NetSentinel is a defensive security monitoring tool.
 
-Live packet capture is not implemented yet. The code is structured so a future capture module can produce `NetworkEvent` objects and feed them into the same `DetectionEngine`.
+This project does not include and should not include:
 
-## Clean Build Artifacts
+- Exploit code
+- Malware
+- Offensive scanning tools
+- Brute force tools
+- Credential attacks
+- Persistence techniques
+- Security bypass functionality
 
-```bash
-make clean
-```
+The purpose of this project is detection, monitoring, alerting, and learning.
+
+## Roadmap
+
+- Add authentication log parsing for SSH failures
+- Add SQLite storage backend
+- Add allowlist and blocklist support
+- Add export to JSON or CSV
+- Add more defensive detection rules
+- Improve terminal dashboard view
+
+## Author
+
+Created by **Iliass Alami-Qammouri**.
