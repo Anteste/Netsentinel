@@ -1,6 +1,7 @@
 #include "DetectionEngine.h"
 #include "IdsConfig.h"
 #include "PortScanRule.h"
+#include "SecurityAnalyzer.h"
 #include "SshBruteForceRule.h"
 
 #include <fstream>
@@ -139,6 +140,25 @@ void testConfigurationLoadsValues()
     expect(config.liveCapturePacketCount == 25, "config should load live capture packet count");
     expect(config.eventLogPath == "logs/test-events.log", "config should load event log path");
 }
+
+void testSecurityAnalyzerScoresSuspiciousSources()
+{
+    SecurityAnalyzer analyzer;
+    analyzer.observeEvent(tcpEvent(4000, "10.0.0.9", 22));
+    analyzer.observeEvent(tcpEvent(4001, "10.0.0.9", 23));
+
+    Alert alert;
+    alert.sourceIp = "10.0.0.9";
+    alert.type = AlertType::SSH_BRUTE_FORCE;
+    alert.severity = Severity::HIGH;
+    analyzer.observeAlert(alert);
+
+    const auto profile = analyzer.getProfile("10.0.0.9");
+    expect(profile.score >= 70, "security analyzer should score risky service access and high alerts");
+    expect(profile.alertCount == 1, "security analyzer should count alerts");
+    expect(profile.destinationPorts.size() == 2, "security analyzer should track unique destination ports");
+    expect(!profile.reasons.empty(), "security analyzer should explain score reasons");
+}
 }
 
 int main()
@@ -150,6 +170,7 @@ int main()
         testSshBruteForceDetected();
         testSshBruteForceNotDetectedBelowThreshold();
         testConfigurationLoadsValues();
+        testSecurityAnalyzerScoresSuspiciousSources();
         std::cout << "All IDS tests passed" << std::endl;
         return 0;
     }

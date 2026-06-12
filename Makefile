@@ -3,7 +3,7 @@ CXXFLAGS := -std=c++17 -Wall -Wextra -Wpedantic -Iinclude
 
 CORE_SRCS := src/Alert.cpp src/AlertManager.cpp src/DetectionEngine.cpp \
 	src/FileLogger.cpp src/IdsConfig.cpp src/NetworkEvent.cpp \
-	src/PortScanRule.cpp src/SshBruteForceRule.cpp
+	src/PortScanRule.cpp src/SecurityAnalyzer.cpp src/SshBruteForceRule.cpp
 
 APP_SRCS := src/main.cpp src/EventSimulator.cpp src/LiveCapture.cpp
 TEST_SRCS := tests/IdsTests.cpp src/EventSimulator.cpp

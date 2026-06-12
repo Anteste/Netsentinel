@@ -18,6 +18,7 @@ add_library(ids_core
     src/IdsConfig.cpp
     src/NetworkEvent.cpp
     src/PortScanRule.cpp
+    src/SecurityAnalyzer.cpp
     src/SshBruteForceRule.cpp
 )
 

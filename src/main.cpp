@@ -5,6 +5,7 @@
 #include "IdsConfig.h"
 #include "LiveCapture.h"
 #include "PortScanRule.h"
+#include "SecurityAnalyzer.h"
 #include "SshBruteForceRule.h"
 
 #include <iostream>
@@ -212,15 +213,17 @@ void printStoredAlerts(const FileLogger& logger, const CliOptions& options, bool
     }
 }
 
-void processEvent(const NetworkEvent& event, DetectionEngine& engine,
+void processEvent(const NetworkEvent& event, DetectionEngine& engine, SecurityAnalyzer& securityAnalyzer,
     AlertManager& alertManager, const FileLogger& logger, bool useColor)
 {
     std::cout << event.toTerminalString(useColor) << std::endl;
     logger.logEvent(event);
+    securityAnalyzer.observeEvent(event);
 
     const auto alerts = engine.processEvent(event);
     for (const auto& alert : alerts)
     {
+        securityAnalyzer.observeAlert(alert);
         alertManager.addAlert(alert);
         logger.logAlert(alert);
         alertManager.printAlert(alert);
@@ -245,6 +248,7 @@ int main(int argc, char** argv)
         DetectionEngine engine;
         engine.addRule(std::make_unique<PortScanRule>(config));
         engine.addRule(std::make_unique<SshBruteForceRule>(config));
+        SecurityAnalyzer securityAnalyzer;
 
         const bool useColor = config.ansiColorEnabled;
         AlertManager alertManager(useColor);
@@ -270,10 +274,11 @@ int main(int argc, char** argv)
 
             for (const auto& event : events)
             {
-                processEvent(event, engine, alertManager, logger, useColor);
+                processEvent(event, engine, securityAnalyzer, alertManager, logger, useColor);
             }
 
             alertManager.printStatus(engine.processedEventCount());
+            securityAnalyzer.printSummary(useColor);
             return 0;
         }
 
@@ -293,10 +298,11 @@ int main(int argc, char** argv)
 
         capture.capture(packetCount, [&](const NetworkEvent& event)
         {
-            processEvent(event, engine, alertManager, logger, useColor);
+            processEvent(event, engine, securityAnalyzer, alertManager, logger, useColor);
         });
 
         alertManager.printStatus(engine.processedEventCount());
+        securityAnalyzer.printSummary(useColor);
         return 0;
     }
     catch (const std::exception& ex)

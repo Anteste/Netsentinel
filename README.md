@@ -39,6 +39,8 @@ The project focuses on practical blue-team use cases such as TCP port scan detec
 - Configurable detection thresholds
 - Color-coded terminal output
 - Severity-specific alert colors
+- Suspicion scoring per source IP
+- Security summary with reasons and recommendations
 - Local event and alert logging
 - CLI-based stored alert filtering
 - Modular detection engine
@@ -73,6 +75,10 @@ Example output:
 [ALERT][HIGH][SSH_BRUTE_FORCE] 192.168.1.50 attempted 15 SSH connections in 30s
 [STATUS] Processed events: 65
 [STATUS] Generated alerts: 2
+[SECURITY SUMMARY] Source reputation
+- 192.168.1.80 score 84 CRITICAL | events=10 alerts=1 unique_ports=10 unique_hosts=1
+  reason: Triggered MEDIUM PORT_SCAN alert
+  recommendation: Investigate immediately, identify the device, and isolate it if it is unknown.
 ```
 
 Alert colors:
@@ -98,6 +104,8 @@ NetSentinel
 │   └── SshBruteForceRule
 ├── Alert Manager
 │   └── Stores and formats security alerts
+├── Security Analyzer
+│   └── Scores source IPs and explains suspicious behavior
 ├── Storage / Logging
 │   └── Writes events and alerts locally
 ├── Configuration
@@ -226,6 +234,27 @@ Supported alert types:
 - `PORT_SCAN`
 - `SSH_BRUTE_FORCE`
 
+## Source Reputation
+
+NetSentinel does not only print packets. It also builds a source-IP reputation profile while traffic is processed.
+
+Each source IP receives a suspicion score from `0` to `100` based on:
+
+- triggered alerts
+- alert severity
+- contact with risky service ports such as SSH, Telnet, SMB, RDP, VNC, Redis, and Elasticsearch
+- number of unique destination ports
+- number of unique destination hosts
+
+Score bands:
+
+- `0-24`: LOW
+- `25-49`: MEDIUM
+- `50-79`: HIGH
+- `80-100`: CRITICAL
+
+At the end of a run, NetSentinel prints a security summary with the most suspicious source IPs, the reasons for the score, and a recommended next action.
+
 ## Detection Rules
 
 ### TCP Port Scan Detection
@@ -289,6 +318,7 @@ The tests cover:
 - SSH brute force detection above threshold
 - SSH brute force behavior below threshold
 - Alert field validation
+- Source reputation scoring
 - Configuration loading
 
 ## Security Scope
